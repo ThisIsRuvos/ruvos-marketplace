@@ -1,11 +1,11 @@
 {
   "name": "ruvos-google-chat",
   "displayName": "Ruvos Google Chat",
-  "version": "0.2.1",
+  "version": "0.3.1",
   "minClientVersions": {
     "cursor": "3.13.0"
   },
-  "description": "Search spaces, read and send Google Chat via chatmcp.googleapis.com (Gmail-shaped mcp.json \u2014 host Google token; middle-layer MCP coming in 0.3).",
+  "description": "Search spaces, read and send Google Chat messages via Ruvos OAuth middle-layer MCP. No Google client secrets in Cursor — DCR on our Authorization Server.",
   "author": {
     "name": "Ruvos",
     "email": "frans@ruvos.com"
@@ -14,21 +14,8 @@
   "repository": "https://github.com/ThisIsRuvos/ruvos-marketplace",
   "license": "MIT",
   "logo": "assets/logo.svg",
-  "keywords": [
-    "google-chat",
-    "chat",
-    "google",
-    "mcp",
-    "workspace",
-    "ruvos"
-  ],
+  "keywords": ["google-chat", "chat", "mcp", "ruvos", "oauth"],
   "category": "productivity",
-  "tags": [
-    "google-chat",
-    "chat",
-    "mcp",
-    "google-workspace",
-    "ruvos"
-  ],
+  "tags": ["google-chat", "mcp", "ruvos"],
   "mcpServers": "./mcp.json"
 }
