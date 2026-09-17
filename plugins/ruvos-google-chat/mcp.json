@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ruvos-google-chat": {
+      "type": "http",
+      "url": "https://chatmcp.googleapis.com/mcp/v1"
+    }
+  }
+}
