@@ -2,7 +2,7 @@
   "mcpServers": {
     "ruvos-google-chat": {
       "type": "http",
-      "url": "https://google-chat-mcp-bsz32itrea-uc.a.run.app/mcp"
+      "url": "https://google-chat-mcp.ruvos.com/mcp"
     }
   }
 }
