@@ -1,0 +1,21 @@
+{
+  "name": "ruvos-marketplace",
+  "displayName": "Ruvos Marketplace",
+  "owner": {
+    "name": "Ruvos",
+    "email": "frans@ruvos.com"
+  },
+  "metadata": {
+    "description": "Ruvos Team Marketplace for Cursor / Grok Bot plugins.",
+    "version": "0.1.0",
+    "pluginRoot": "plugins"
+  },
+  "plugins": [
+    {
+      "name": "ruvos-google-chat",
+      "source": "ruvos-google-chat",
+      "description": "Search spaces, read and send Google Chat messages via chatmcp.googleapis.com",
+      "logo": "assets/logo.svg"
+    }
+  ]
+}
