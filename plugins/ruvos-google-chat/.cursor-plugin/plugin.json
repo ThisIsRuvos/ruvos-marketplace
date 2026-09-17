@@ -1,11 +1,11 @@
 {
   "name": "ruvos-google-chat",
   "displayName": "Ruvos Google Chat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minClientVersions": {
     "cursor": "3.13.0"
   },
-  "description": "Search spaces, read and send Google Chat messages. Ruvos packaging of Google's Chat remote MCP (same shape as Cursor's Gmail / Calendar / Drive plugins).",
+  "description": "Search spaces, read and send Google Chat messages via Google Chat MCP. Uses static Google OAuth (your chatsAuth client) \u2014 Configure GOOGLE_OAUTH_CLIENT_ID / SECRET after install.",
   "author": {
     "name": "Ruvos",
     "email": "frans@ruvos.com"
@@ -30,5 +30,24 @@
     "google-workspace",
     "ruvos"
   ],
-  "mcpServers": "./mcp.json"
+  "mcpServers": "./mcp.json",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "GOOGLE_OAUTH_CLIENT_ID": {
+        "type": "string",
+        "title": "Google OAuth Client ID",
+        "description": "OAuth 2.0 Client ID from GCP project chatsAuth (Web application). Redirect URIs must include http://localhost:8787/callback and https://www.cursor.com/agents/mcp/oauth/callback"
+      },
+      "GOOGLE_OAUTH_CLIENT_SECRET": {
+        "type": "string",
+        "title": "Google OAuth Client Secret",
+        "description": "OAuth 2.0 Client Secret for that same Web client"
+      }
+    },
+    "required": [
+      "GOOGLE_OAUTH_CLIENT_ID",
+      "GOOGLE_OAUTH_CLIENT_SECRET"
+    ]
+  }
 }
