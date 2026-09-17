@@ -2,7 +2,18 @@
   "mcpServers": {
     "ruvos-google-chat": {
       "type": "http",
-      "url": "https://chatmcp.googleapis.com/mcp/v1"
+      "url": "https://chatmcp.googleapis.com/mcp/v1",
+      "auth": {
+        "CLIENT_ID": "${GOOGLE_OAUTH_CLIENT_ID}",
+        "CLIENT_SECRET": "${GOOGLE_OAUTH_CLIENT_SECRET}",
+        "scopes": [
+          "https://www.googleapis.com/auth/chat.spaces.readonly",
+          "https://www.googleapis.com/auth/chat.memberships.readonly",
+          "https://www.googleapis.com/auth/chat.messages.readonly",
+          "https://www.googleapis.com/auth/chat.messages.create",
+          "https://www.googleapis.com/auth/chat.users.readstate"
+        ]
+      }
     }
   }
 }
