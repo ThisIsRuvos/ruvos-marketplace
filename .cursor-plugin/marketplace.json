@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Ruvos Team Marketplace for Cursor / Grok Bot plugins.",
-    "version": "0.3.2",
+    "version": "0.4.0",
     "pluginRoot": "plugins"
   },
   "plugins": [
     {
       "name": "ruvos-google-chat",
       "source": "ruvos-google-chat",
-      "description": "Search spaces, read and send Google Chat via Ruvos OAuth middle-layer MCP (DCR).",
+      "description": "Search spaces, resolve people, open DMs, read and send Google Chat via Ruvos OAuth middle-layer MCP (DCR).",
       "logo": "assets/logo.svg"
     }
   ]
