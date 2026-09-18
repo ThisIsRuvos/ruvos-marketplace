@@ -1,7 +1,7 @@
 {
   "name": "ruvos-google-chat",
   "displayName": "Ruvos Google Chat",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "minClientVersions": {
     "cursor": "3.13.0"
   },
