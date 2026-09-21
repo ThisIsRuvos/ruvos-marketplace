@@ -1,11 +1,11 @@
 {
   "name": "ruvos-google-docs",
   "displayName": "Ruvos Google Docs",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "minClientVersions": {
     "cursor": "3.13.0"
   },
-  "description": "Create and edit Google Docs in place via the Docs API (documents.batchUpdate): headings, lists, tables, headers and footers, and follow-up edits. Ruvos OAuth DCR — no Google client secret in Cursor. Not Word, not HTML, not a markdown upload.",
+  "description": "Create and edit Google Docs in place via the Docs API (documents.batchUpdate): headings, lists, tables, headers and footers, inline images, and follow-up edits. Connect scopes include documents and drive.file. Ruvos OAuth DCR — no Google client secret in Cursor. Not Word, not HTML, not a markdown upload.",
   "author": {
     "name": "Ruvos",
     "email": "frans@ruvos.com"

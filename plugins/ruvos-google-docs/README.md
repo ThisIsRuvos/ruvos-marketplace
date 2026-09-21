@@ -34,10 +34,11 @@ Requested on the Ruvos Authorization Server (the existing Ruvos Google OAuth cli
 | `openid` | Subject on the user token (same as Google Chat) |
 | `https://www.googleapis.com/auth/userinfo.email` | User identity on the token |
 | `https://www.googleapis.com/auth/documents` | Create and edit in place: `documents.create`, `documents.get`, `documents.batchUpdate` |
+| `https://www.googleapis.com/auth/drive.file` | Upload PNG, JPEG, or GIF bytes for `insert_image`, then insert them with `insertInlineImage`. File create for that staging image only. |
 
-This Connect does **not** request Drive (`drive` or `drive.file`), Gmail, or Calendar. `documents.create` already creates the Doc, and edits go through `batchUpdate` on that Doc. There is no export and no re-upload.
+This Connect requests `drive.file` together with the Docs scopes above. It does **not** request full `drive`, Gmail, or Calendar. A hosted image URL is not an input. There is no export and no re-upload of the Doc.
 
-`drive.file` (file create / parent only) is the scope to add later if a Doc must be placed in a specific Workspace folder. Do not add full `drive` for that. The shared Google OAuth client also serves Chat; those Chat scopes stay on the Chat Connect flow and are not requested here.
+Disconnect and connect again after this scope change so consent includes `https://www.googleapis.com/auth/drive.file`. Do not add full `drive`. The shared Google OAuth client also serves Chat; those Chat scopes stay on the Chat Connect flow and are not requested here.
 
 ## Tools
 
@@ -48,6 +49,7 @@ This Connect does **not** request Drive (`drive` or `drive.file`), Gmail, or Cal
 | `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). `insertText` and `updateParagraphStyle` may target a header or footer `segmentId`. `createHeader` and `createFooter` are allowed. |
 | `get_doc` | Read title, URL, plain text, and an outline back from that Doc. The outline is the body only. Headers and footers are omitted. |
 | `set_header_footer` | Set the default and optional first-page header and/or footer on an existing Doc. Body and tables are left unchanged. |
+| `insert_image` | Upload PNG, JPEG, or GIF bytes with `drive.file` and insert them inline with `insertInlineImage`. A hosted image URL is not an input. |
 
 `blocks` is a list of objects:
 
@@ -69,6 +71,8 @@ Example: header `{"default": "Ruvos — Confidential"}` and footer `{"page_numbe
 
 The Docs API cannot insert a live AutoText PAGE_NUMBER field. If one is already in the segment it is kept and `pageNumber.liveField` is true. Otherwise the segment is created and `pageNumber.liveField` is false. Add the number in the Doc UI with Insert > Page numbers. `get_doc`'s outline stays body-only and does not list headers or footers.
 
+`insert_image` takes `document_id` plus the image bytes as `image_base64`, or `image_path` on the MCP host. Formats are PNG, JPEG, and GIF. Optional `width_pt` and `height_pt` are capped at 2000 points. The file must be at most 5 MiB and 25 megapixels. The server uploads those bytes with `drive.file`, inserts them with `insertInlineImage`, and deletes the staging Drive file afterward, including when the insert fails. The temporary anyone-with-the-link fetch URL is redacted from tool errors. If Workspace policy blocks anyone-with-the-link sharing, the insert fails closed and the staging file is still deleted when Drive allows it. Full `drive` is not requested.
+
 ## Workspace BAA
 
 Google Docs and Drive count as Workspace-covered only when **both** are true:
@@ -76,7 +80,7 @@ Google Docs and Drive count as Workspace-covered only when **both** are true:
 - Ruvos has an active Google Workspace BAA, and
 - the Doc lives in that Workspace (Workspace account, not personal Gmail).
 
-Confirm the BAA covers Docs before an NFRHC assessment, or any other PHI-adjacent assessment, is written into a native Doc. If the BAA is absent or unclear, keep those assessments in the GitLab wiki or in non-PHI Drive folders until James or Frans confirms.
+Confirm the BAA covers Docs before an NFRHC assessment, or any other PHI-adjacent assessment, is written into a native Doc. The same gate covers images. If the BAA is absent or unclear, keep those assessments in the GitLab wiki or in non-PHI Drive folders until James or Frans confirms.
 
 ## Soft-prove (Annie, after this service is deployed)
 
@@ -116,11 +120,13 @@ Prove on a **non-PHI sample Doc first**. NFRHC comes only after the BAA check ab
 5. `get_doc` on the same id returns that text. The outline is the body only. It does not include headers or footers.
 6. `set_header_footer` on the same `documentId`: header `{"default": "Ruvos — Confidential"}` and footer `{"page_number": true}`. Refresh the Doc. The header reads `Ruvos — Confidential`. A new footer reports `pageNumber.liveField` false because the Docs API cannot insert a live AutoText PAGE_NUMBER. Add the page number in the Doc UI (Insert > Page numbers) if it is missing. Body and tables from steps 2–3 stay as they were.
 
-If step 3 does not show up in the Doc UI, the soft-prove failed. Hand back the Doc URL only after the UI shows both writes and the header.
+7. After re-consent (so `drive.file` is on the token), `insert_image` on the same `documentId` with a local non-PHI PNG (`image_base64` or `image_path`). Refresh the Doc. The image is visible inline. Do not use a hosted image URL. NFRHC and other PHI-adjacent images stay out of this step.
+
+If step 3 does not show up in the Doc UI, or the image from step 7 is missing, the soft-prove failed. Hand back the Doc URL only after the UI shows both writes, the header, and the inline image.
 
 ### 2. NFRHC
 
-After James or Frans confirms the Workspace BAA covers Docs, repeat the same create / `replace_body` / follow-up edit with the NFRHC assessment in a Workspace Doc. Until that confirmation, leave NFRHC in the GitLab wiki or a non-PHI Drive folder.
+After James or Frans confirms the Workspace BAA covers Docs, repeat the same create / `replace_body` / follow-up edit with the NFRHC assessment in a Workspace Doc. Images in that Doc use the same BAA gate. Until that confirmation, leave NFRHC in the GitLab wiki or a non-PHI Drive folder.
 
 ## Server source
 
