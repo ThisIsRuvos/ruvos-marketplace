@@ -45,8 +45,9 @@ This Connect does **not** request Drive (`drive` or `drive.file`), Gmail, or Cal
 |------|----------------|
 | `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
 | `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. |
-| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). |
-| `get_doc` | Read title, URL, plain text, and an outline back from that Doc. |
+| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). `insertText` and `updateParagraphStyle` may target a header or footer `segmentId`. `createHeader` and `createFooter` are allowed. |
+| `get_doc` | Read title, URL, plain text, and an outline back from that Doc. The outline is the body only. Headers and footers are omitted. |
+| `set_header_footer` | Set the default and optional first-page header and/or footer on an existing Doc. Body and tables are left unchanged. |
 
 `blocks` is a list of objects:
 
@@ -57,6 +58,16 @@ This Connect does **not** request Drive (`drive` or `drive.file`), Gmail, or Cal
 - `{"type": "table", "header": true, "rows": [["H1", "H2"], ["a", "b"]]}`
 
 Do not pass `type: html`, `docx`, `word`, or `markdown`. Those are rejected. Markdown characters inside a paragraph are stored as literal text; they are not a file upload and they are not rendered as a Doc export.
+
+`set_header_footer` takes `document_id` plus optional `header` and `footer` objects. Each object accepts:
+
+- `default` — text shown on every page, or on pages after the first when `first_page` is set
+- `first_page` — different first-page text. Setting this turns on `useFirstPageHeaderFooter` for both the header and the footer
+- `page_number` — `true` right-aligns the default segment
+
+Example: header `{"default": "Ruvos — Confidential"}` and footer `{"page_number": true}`.
+
+The Docs API cannot insert a live AutoText PAGE_NUMBER field. If one is already in the segment it is kept and `pageNumber.liveField` is true. Otherwise the segment is created and `pageNumber.liveField` is false. Add the number in the Doc UI with Insert > Page numbers. `get_doc`'s outline stays body-only and does not list headers or footers.
 
 ## Workspace BAA
 
@@ -102,9 +113,10 @@ Prove on a **non-PHI sample Doc first**. NFRHC comes only after the BAA check ab
 ```
 
 4. Refresh the Doc in the browser. Headings, lists, and the table from step 2 are there, and `DRAFT` now reads `FINAL`.
-5. `get_doc` on the same id returns that text.
+5. `get_doc` on the same id returns that text. The outline is the body only. It does not include headers or footers.
+6. `set_header_footer` on the same `documentId`: header `{"default": "Ruvos — Confidential"}` and footer `{"page_number": true}`. Refresh the Doc. The header reads `Ruvos — Confidential`. A new footer reports `pageNumber.liveField` false because the Docs API cannot insert a live AutoText PAGE_NUMBER. Add the page number in the Doc UI (Insert > Page numbers) if it is missing. Body and tables from steps 2–3 stay as they were.
 
-If step 3 does not show up in the Doc UI, the soft-prove failed. Hand back the Doc URL only after the UI shows both writes.
+If step 3 does not show up in the Doc UI, the soft-prove failed. Hand back the Doc URL only after the UI shows both writes and the header.
 
 ### 2. NFRHC
 
