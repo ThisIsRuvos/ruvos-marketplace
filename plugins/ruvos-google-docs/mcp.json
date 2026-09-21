@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ruvos-google-docs": {
+      "type": "http",
+      "url": "https://google-docs-mcp.ruvos.com/mcp"
+    }
+  }
+}

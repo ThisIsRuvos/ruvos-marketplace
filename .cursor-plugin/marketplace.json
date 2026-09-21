@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "Ruvos Team Marketplace for Cursor / Grok Bot plugins.",
-    "version": "0.5.6",
+    "version": "0.6.0",
     "pluginRoot": "plugins"
   },
   "plugins": [
@@ -15,6 +15,12 @@
       "name": "ruvos-google-chat",
       "source": "ruvos-google-chat",
       "description": "Search spaces, resolve people, open DMs, read and send Google Chat via Ruvos OAuth middle-layer MCP (DCR).",
+      "logo": "assets/logo.svg"
+    },
+    {
+      "name": "ruvos-google-docs",
+      "source": "ruvos-google-docs",
+      "description": "Create and edit Google Docs in place via Docs API batchUpdate (headings, lists, tables). Ruvos OAuth DCR. Not Word, not HTML, not a markdown upload.",
       "logo": "assets/logo.svg"
     }
   ]
