@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- `create_doc` and `replace_body` accept one `{type: "toc"}` block. Other blocks are written first, then the TOC is inserted at that position so H1–H3 styles already in the Doc supply the entries.
+- `insert_toc` does the same on an existing Doc. Omit `index` to insert at the start of the body.
+- `batch_update_doc` allowlists `insertTableOfContents`.
+- `get_doc` outline includes `{type: "toc", entries: [...]}` when the body has one.
+- No new OAuth scopes. No Drive change. No re-consent.
+- Page break, horizontal rule, and heading bookmarks stay out of scope. `insertPageBreak` remains a raw batch key only.
+
 ## 0.3.0
 
 - `create_doc` and `replace_body` set text color and a character highlight without hand-written Docs indexes.

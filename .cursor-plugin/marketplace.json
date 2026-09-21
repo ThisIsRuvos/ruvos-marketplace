@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "Ruvos Team Marketplace for Cursor / Grok Bot plugins.",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "pluginRoot": "plugins"
   },
   "plugins": [
@@ -20,7 +20,7 @@
     {
       "name": "ruvos-google-docs",
       "source": "ruvos-google-docs",
-      "description": "Create and edit Google Docs in place via Docs API batchUpdate (headings, lists, tables, headers and footers, inline images, text color, highlight, and phrase spans). OAuth includes documents and drive.file. Ruvos OAuth DCR. Not Word, not HTML, not a markdown upload.",
+      "description": "Create and edit Google Docs in place via Docs API batchUpdate (headings, lists, tables, headers and footers, inline images, text color, highlight, phrase spans, and a table of contents). OAuth includes documents and drive.file. Ruvos OAuth DCR. Not Word, not HTML, not a markdown upload.",
       "logo": "assets/logo.svg"
     }
   ]

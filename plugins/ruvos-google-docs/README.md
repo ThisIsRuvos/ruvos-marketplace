@@ -44,10 +44,11 @@ Disconnect and connect again after this scope change so consent includes `https:
 
 | Tool | What it does |
 |------|----------------|
-| `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call, including `color`, `backgroundColor` (alias `highlight`), and `spans`. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
-| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Blocks take the same `color`, `highlight`, and `spans` fields. |
-| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). `insertText` and `updateParagraphStyle` may target a header or footer `segmentId`. `createHeader` and `createFooter` are allowed. `updateTextStyle` is already allowlisted (foreground and background color). No new request key. |
-| `get_doc` | Read title, URL, plain text, and an outline back from that Doc. The outline is the body only. Headers and footers are omitted. |
+| `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call, including `color`, `backgroundColor` (alias `highlight`), `spans`, and one `{type: "toc"}` block. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
+| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Blocks take the same `color`, `highlight`, and `spans` fields, and one `{type: "toc"}` block. |
+| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). `insertText` and `updateParagraphStyle` may target a header or footer `segmentId`. `createHeader` and `createFooter` are allowed. `updateTextStyle` is already allowlisted (foreground and background color). `insertTableOfContents` is allowlisted. |
+| `get_doc` | Read title, URL, plain text, and an outline back from that Doc. The outline is the body only. Headers and footers are omitted. When the body has a TOC, the outline includes `{type: "toc", entries: [...]}`. |
+| `insert_toc` | Insert a table of contents on an existing Doc. Omit `index` to insert at the start of the body. Entries come from H1–H3 styles already in the Doc. |
 | `set_header_footer` | Set the default and optional first-page header and/or footer on an existing Doc. Body and tables are left unchanged. |
 | `insert_image` | Upload PNG, JPEG, or GIF bytes with `drive.file` and insert them inline with `insertInlineImage`. A hosted image URL is not an input. |
 
@@ -58,6 +59,7 @@ Disconnect and connect again after this scope change so consent includes `https:
 - `{"type": "bullets", "items": ["...", "..."]}` (alias `bullet_list`)
 - `{"type": "numbered", "items": ["...", "..."]}` (alias `numbered_list`)
 - `{"type": "table", "header": true, "rows": [["H1", "H2"], ["a", "b"]]}`
+- `{"type": "toc"}` — one table of contents. Other blocks are written first, then the TOC is inserted at that position. Entries come from H1–H3 styles already in the Doc.
 
 `color`, `backgroundColor`, and `spans` are optional on a heading, paragraph, or list item. A table cell takes `color` and `backgroundColor` on the cell.
 
@@ -156,6 +158,28 @@ Non-PHI. OAuth scopes are unchanged. No re-consent. Run this after Cloud Run has
 ```
 
 Refresh the Doc. The heading is navy `#122949`. The body is black `#000000`. The words `This phrase is highlighted` have a `#FFF3B0` character highlight. `get_doc` returns those words. Color is confirmed in the Doc.
+
+### 1c. Table of contents
+
+Non-PHI. OAuth scopes are unchanged. No re-consent. No Drive change. Run this after Cloud Run has the TOC insert.
+
+`replace_body` on the sample `documentId` (or a new non-PHI Doc) with an H1, an H2, and one `toc` block:
+
+```json
+[
+  {"type": "heading", "level": 1, "text": "TOC sample"},
+  {"type": "heading", "level": 2, "text": "Scope"},
+  {"type": "toc"}
+]
+```
+
+Other blocks are written first. The TOC is inserted at the `toc` block's position so those heading styles supply the entries.
+
+On a Doc that already has headings, `insert_toc` with that `document_id` does the same. Omit `index` to insert at the start of the body.
+
+Refresh the Doc. The TOC lists the H1 and the H2. `get_doc` outline includes `{type: "toc", entries: [...]}`. A follow-up `replace_body` rebuilds the body, including the previous TOC.
+
+Page break, horizontal rule, and heading bookmarks stay out of scope. `insertPageBreak` remains a raw `batch_update_doc` key only.
 
 ### 2. NFRHC
 
