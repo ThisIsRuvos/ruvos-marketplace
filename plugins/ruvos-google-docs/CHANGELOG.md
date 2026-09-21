@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- `create_doc` and `replace_body` set text color and a character highlight without hand-written Docs indexes.
+- `color` is foreground. `backgroundColor` (alias `highlight`) is a character highlight. `spans` styles the first matching phrase inside a heading, paragraph, or list item. Table cells take `color` / `backgroundColor` on the cell.
+- Values are `#RGB`, `#RRGGBB`, or RGB channel floats from 0 to 1. Hex is converted as channel / 255. Named colors and 0–255 integer channels are rejected.
+- The compiler emits `updateTextStyle` (`foregroundColor` / `backgroundColor` `rgbColor`). Ranges are UTF-16 code units, `endIndex` is exclusive, and the trailing newline is left unstyled. Block color is applied first so a phrase span overlays it.
+- `updateTextStyle` stays on the `batch_update_doc` allowlist. No new request key. OAuth scopes are unchanged. No re-consent.
+
 ## 0.2.0
 
 - `insert_image`: PNG, JPEG, or GIF bytes (`image_base64`, or `image_path` on the MCP host). Uploads with `drive.file` and inserts with `insertInlineImage`. A hosted image URL is not an input. Full `drive` is not requested.

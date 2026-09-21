@@ -44,9 +44,9 @@ Disconnect and connect again after this scope change so consent includes `https:
 
 | Tool | What it does |
 |------|----------------|
-| `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
-| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. |
-| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). `insertText` and `updateParagraphStyle` may target a header or footer `segmentId`. `createHeader` and `createFooter` are allowed. |
+| `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call, including `color`, `backgroundColor` (alias `highlight`), and `spans`. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
+| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Blocks take the same `color`, `highlight`, and `spans` fields. |
+| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`). `insertText` and `updateParagraphStyle` may target a header or footer `segmentId`. `createHeader` and `createFooter` are allowed. `updateTextStyle` is already allowlisted (foreground and background color). No new request key. |
 | `get_doc` | Read title, URL, plain text, and an outline back from that Doc. The outline is the body only. Headers and footers are omitted. |
 | `set_header_footer` | Set the default and optional first-page header and/or footer on an existing Doc. Body and tables are left unchanged. |
 | `insert_image` | Upload PNG, JPEG, or GIF bytes with `drive.file` and insert them inline with `insertInlineImage`. A hosted image URL is not an input. |
@@ -58,6 +58,17 @@ Disconnect and connect again after this scope change so consent includes `https:
 - `{"type": "bullets", "items": ["...", "..."]}` (alias `bullet_list`)
 - `{"type": "numbered", "items": ["...", "..."]}` (alias `numbered_list`)
 - `{"type": "table", "header": true, "rows": [["H1", "H2"], ["a", "b"]]}`
+
+`color`, `backgroundColor`, and `spans` are optional on a heading, paragraph, or list item. A table cell takes `color` and `backgroundColor` on the cell.
+
+- `color` is foreground.
+- `backgroundColor` is a character highlight. Alias `highlight`.
+- `spans` styles the first matching phrase inside that heading, paragraph, or list item. Each span is `{"text": "<phrase>", "color": "...", "backgroundColor": "..."}` (or `highlight`). Block color is applied first so the phrase span overlays it.
+- A list item or table cell may be a string, or an object `{"text": "..."}` with the same color fields. Header bold stays when a header cell is highlighted.
+
+Values are `#RGB`, `#RRGGBB`, or RGB channel floats from 0 to 1 (`red`, `green`, `blue`). Hex is converted as channel / 255. Named colors are rejected. Integer channels from 0 to 255 are rejected.
+
+The compiler emits `updateTextStyle` with `foregroundColor` / `backgroundColor` `rgbColor`. Ranges are UTF-16 code units, `endIndex` is exclusive, and the trailing newline is left unstyled. Color does not change OAuth scopes. No re-consent.
 
 Do not pass `type: html`, `docx`, `word`, or `markdown`. Those are rejected. Markdown characters inside a paragraph are stored as literal text; they are not a file upload and they are not rendered as a Doc export.
 
@@ -123,6 +134,28 @@ Prove on a **non-PHI sample Doc first**. NFRHC comes only after the BAA check ab
 7. After re-consent (so `drive.file` is on the token), `insert_image` on the same `documentId` with a local non-PHI PNG (`image_base64` or `image_path`). Refresh the Doc. The image is visible inline. Do not use a hosted image URL. NFRHC and other PHI-adjacent images stay out of this step.
 
 If step 3 does not show up in the Doc UI, or the image from step 7 is missing, the soft-prove failed. Hand back the Doc URL only after the UI shows both writes, the header, and the inline image.
+
+### 1b. Text color and one highlighted phrase
+
+Non-PHI. OAuth scopes are unchanged. No re-consent. Run this after Cloud Run has the color compiler.
+
+`replace_body` on the sample `documentId` (or a new non-PHI Doc):
+
+```json
+[
+  {"type": "heading", "level": 1, "text": "Color sample", "color": "#122949"},
+  {
+    "type": "paragraph",
+    "text": "Body stays black. This phrase is highlighted.",
+    "color": "#000000",
+    "spans": [
+      {"text": "This phrase is highlighted", "highlight": "#FFF3B0"}
+    ]
+  }
+]
+```
+
+Refresh the Doc. The heading is navy `#122949`. The body is black `#000000`. The words `This phrase is highlighted` have a `#FFF3B0` character highlight. `get_doc` returns those words. Color is confirmed in the Doc.
 
 ### 2. NFRHC
 
