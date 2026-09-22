@@ -1,27 +1,32 @@
 # Changelog
 
+## 0.4.1
+
+- Fail closed on a native table of contents. The Google Docs API cannot insert one: `insertTableOfContents` is not a `documents.batchUpdate` field and returns HTTP 400.
+- `{type: "toc"}` and `insert_toc` raise that error and do not call the Docs API. `insertTableOfContents` is not allowlisted.
+- Soft-prove is headings via MCP, then **Insert → Table of contents** in the Doc UI. No synthetic TOC. No Apps Script.
+- `get_doc` can still read a TOC that was added in the Doc UI.
+
+## 0.4.0
+
+- Attempted a `toc` block and `insert_toc` via `insertTableOfContents`. Soft-prove failed: Docs API HTTP 400 `Unknown name "insertTableOfContents"`. Superseded by 0.4.1.
+
 ## 0.3.0
 
-- `create_doc` and `replace_body` set text color and a character highlight without hand-written Docs indexes.
-- `color` is foreground. `backgroundColor` (alias `highlight`) is a character highlight. `spans` styles the first matching phrase inside a heading, paragraph, or list item. Table cells take `color` / `backgroundColor` on the cell.
-- Values are `#RGB`, `#RRGGBB`, or RGB channel floats from 0 to 1. Hex is converted as channel / 255. Named colors and 0–255 integer channels are rejected.
-- The compiler emits `updateTextStyle` (`foregroundColor` / `backgroundColor` `rgbColor`). Ranges are UTF-16 code units, `endIndex` is exclusive, and the trailing newline is left unstyled. Block color is applied first so a phrase span overlays it.
-- `updateTextStyle` stays on the `batch_update_doc` allowlist. No new request key. OAuth scopes are unchanged. No re-consent.
+- `create_doc` and `replace_body` accept optional `color` (foreground) and `backgroundColor` or `highlight` (character highlight) on headings, paragraphs, list items, and table cells. `spans` highlight one phrase inside a heading, paragraph, or list item. The compiler emits `updateTextStyle` with `rgbColor` floats from 0 to 1. Callers do not hand-write UTF-16 indexes.
+- `updateTextStyle` was already allowlisted (header bold). No new batch key. No OAuth scope change. No re-consent.
 
 ## 0.2.0
 
-- `insert_image`: PNG, JPEG, or GIF bytes (`image_base64`, or `image_path` on the MCP host). Uploads with `drive.file` and inserts with `insertInlineImage`. A hosted image URL is not an input. Full `drive` is not requested.
-- Scope `https://www.googleapis.com/auth/drive.file` is requested with the existing Docs scopes on the same Google OAuth client. Disconnect and connect again to re-consent.
-- Limits: 5 MiB, 25 megapixels, optional `width_pt` / `height_pt` (max 2000 points).
-- The staging Drive file is deleted after the insert, including when `insertInlineImage` fails. The temporary anyone-with-the-link URL is redacted from errors. If Workspace policy blocks that share, the insert fails closed and the staging file is still deleted when Drive allows it.
-- Soft-prove images are non-PHI only. NFRHC and other PHI-adjacent images use the same Workspace BAA gate as Doc text.
+- `insert_image` uploads PNG, JPEG, or GIF bytes with `drive.file` and inserts them in place (`insertInlineImage`). A hosted image URL is not accepted. Full `drive` is not requested.
+- OAuth scope `https://www.googleapis.com/auth/drive.file` is requested with the existing Docs scopes on the same Google OAuth client. Disconnect and reconnect Ruvos Google Docs so consent includes it.
+- Limits: 5 MiB, 25 megapixels, optional size in points. The staging Drive file is deleted in a `finally` path, including when `insertInlineImage` fails. Anyone-with-the-link fetch URLs are redacted from logs. A Workspace block on that share fails closed. Non-PHI images only until the same Docs BAA gate as Doc text.
 
 ## 0.1.1
 
-- `set_header_footer`: default and optional first-page header and footer text on an existing Doc, plus an optional page-number slot on the default segment.
-- `get_doc` outline stays body-only. Headers and footers are omitted.
-- `batch_update_doc` may target a header or footer segment (`createHeader`, `createFooter`, `insertText`, `updateParagraphStyle`).
-- The Docs API cannot insert a live AutoText PAGE_NUMBER. A new footer or header reports `pageNumber.liveField` false unless a live field is already in that segment. Add page numbers in the Doc UI (Insert > Page numbers) when the field is not live.
+- `set_header_footer`: default and first-page header/footer text on an existing Doc. Optional `page_number` right-aligns the default segment. A live page-number field is kept when the Doc already has one; the Docs API cannot insert a new AutoText `PAGE_NUMBER`.
+- `batch_update_doc` allows `createHeader` and `createFooter`, including `insertText` and `updateParagraphStyle` on a header or footer segment.
+- `get_doc` outline stays body-only and omits headers and footers.
 
 ## 0.1.0
 
