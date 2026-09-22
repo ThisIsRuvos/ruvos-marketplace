@@ -56,11 +56,11 @@ Ops add `https://www.googleapis.com/auth/drive.file` on that existing OAuth clie
 | Tool | What it does |
 |------|----------------|
 | `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
-| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Optional text color and highlight. `{type: "page_break"}` inserts a page break. `{type: "toc"}` fails closed. |
+| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Optional text color and highlight. `{type: "page_break"}` inserts a page break. `{type: "toc"}` and `{type: "horizontal_rule"}` fail closed. |
 | `insert_toc` | Fails closed. The Docs API cannot insert a native table of contents. |
 | `set_header_footer` | Set default and optional first-page header/footer text on an existing Doc. Optional `page_number` right-aligns that default segment. |
-| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`, `updateTextStyle`, `insertPageBreak`, `createHeader`, `createFooter`). `insertTableOfContents` is rejected. `insertText` and `updateParagraphStyle` may use a header or footer `segmentId`. `updateTextStyle` and `insertInlineImage` stay on the allowed set. |
-| `get_doc` | Read title, URL, plain text, and a **body** outline. Headers and footers are omitted (`outlineScope` is `body`). A page break in the body is `{type: "page_break"}`. A TOC added in the Doc UI is `{type: "toc", entries: [...]}`. |
+| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`, `updateTextStyle`, `insertPageBreak`, `createHeader`, `createFooter`). `insertTableOfContents` and `insertHorizontalRule` are rejected. `insertText` and `updateParagraphStyle` may use a header or footer `segmentId`. `updateTextStyle` and `insertInlineImage` stay on the allowed set. |
+| `get_doc` | Read title, URL, plain text, and a **body** outline. Headers and footers are omitted (`outlineScope` is `body`). A page break in the body is `{type: "page_break"}`. A TOC added in the Doc UI is `{type: "toc", entries: [...]}`. A horizontal line added in the Doc UI is `{type: "horizontal_rule"}`. |
 | `insert_image` | Upload PNG, JPEG, or GIF bytes with `drive.file`, then `insertInlineImage` on that `documentId`. Optional `index`, `width_pt`, and `height_pt`. |
 
 `blocks` is a list of objects:
@@ -72,6 +72,7 @@ Ops add `https://www.googleapis.com/auth/drive.file` on that existing OAuth clie
 - `{"type": "table", "header": true, "rows": [["H1", "H2"], ["a", "b"]]}`
 - `{"type": "page_break"}` — `insertPageBreak` between the surrounding blocks. Aliases: `pagebreak`, `page-break`, `insert_page_break`. It does not take text.
 - `{"type": "toc"}` — rejected. The Google Docs API cannot insert a native TOC. Alias `table_of_contents` is rejected the same way.
+- `{"type": "horizontal_rule"}` — rejected. The Google Docs API cannot insert a horizontal rule. Aliases `hr`, `horizontal-rule`, and `insert_horizontal_rule` are rejected the same way.
 
 Optional on a heading, paragraph, list item, or table cell:
 
@@ -106,6 +107,18 @@ The Google Docs API cannot insert a native TOC. `documents.batchUpdate` has no `
 Write the headings with `create_doc` or `replace_body`. Then in the Doc, use **Insert → Table of contents**. No new OAuth scope. No re-consent.
 
 If a TOC is already in the body because someone used the Doc UI, `get_doc` can return `{type: "toc", entries: [...]}` from that element. That read does not create the TOC. Confirm the list in the Doc UI.
+
+### Horizontal rule
+
+The Google Docs API cannot insert a horizontal rule. The published `documents.batchUpdate` Request schema includes `insertPageBreak` and does not include `insertHorizontalRule`. `HorizontalRule` exists only as a paragraph element that `documents.get` can return. Sending `insertHorizontalRule` is an unknown name (HTTP 400), the same class of failure as `insertTableOfContents`.
+
+`{"type": "horizontal_rule"}` and aliases `hr`, `horizontal-rule`, and `insert_horizontal_rule` fail closed. They do not call the Docs API. `batch_update_doc` rejects `insertHorizontalRule` the same way. There is no line of underscores standing in for a rule, no one-cell table border, and no Apps Script.
+
+Write the paragraphs with `create_doc` or `replace_body`. Then in the Doc, use **Insert → Horizontal line**. No new OAuth scope. No re-consent.
+
+If a horizontal line is already in the body because someone used the Doc UI, `get_doc` can return `{type: "horizontal_rule"}` from that element. That read does not create the rule. Confirm the line in the Doc UI.
+
+An API-inserted rule cannot be soft-proved. The visible line comes from the Doc UI step, between the paragraphs MCP wrote. `page_break` still compiles to `insertPageBreak`. `{type: "toc"}` still fails closed.
 
 ### `insert_image`
 
@@ -316,8 +329,7 @@ After James or Frans confirms the Workspace BAA covers Docs, repeat the same cre
 Not implemented as blocks or helpers:
 
 - Live AutoText page numbers. `set_header_footer` still cannot insert a `PAGE_NUMBER` field. `page_number: true` right-aligns the default segment. Add the number in the Doc UI (Insert → Page numbers) when `pageNumber.liveField` is false.
-- Horizontal rule.
-- Heading bookmarks and internal links.
+- Heading bookmarks and internal links. A horizontal rule is fail-closed above, not a later helper.
 
 File those separately if they should become helpers.
 

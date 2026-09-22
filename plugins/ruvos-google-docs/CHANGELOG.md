@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+- Fail closed on a horizontal rule. The Google Docs API cannot insert one: `insertHorizontalRule` is not a `documents.batchUpdate` field (the published Request schema has `insertPageBreak` and no `insertHorizontalRule`; `HorizontalRule` is only a paragraph element on `documents.get`). An unknown name is HTTP 400, the same class of failure as `insertTableOfContents`.
+- `{type: "horizontal_rule"}` and aliases `hr`, `horizontal-rule`, and `insert_horizontal_rule` raise that error and do not call the Docs API. `insertHorizontalRule` is not on the allowed batch keys.
+- No line of underscores, no table border, and no Apps Script. No new OAuth scope. No re-consent.
+- An API-inserted rule cannot be soft-proved. Write the paragraphs with MCP, then **Insert → Horizontal line** in the Doc UI.
+- `get_doc` can still read a horizontal rule that was added in the Doc UI. Page breaks and the fail-closed TOC are unchanged.
+
 ## 0.5.0
 
 - `create_doc` and `replace_body` accept `{type: "page_break"}` (aliases `pagebreak`, `page-break`, `insert_page_break`). The compiler emits `insertPageBreak`.
