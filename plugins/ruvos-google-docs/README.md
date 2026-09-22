@@ -56,11 +56,11 @@ Ops add `https://www.googleapis.com/auth/drive.file` on that existing OAuth clie
 | Tool | What it does |
 |------|----------------|
 | `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
-| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Optional text color and highlight. `{type: "toc"}` fails closed. |
+| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Optional text color and highlight. `{type: "page_break"}` inserts a page break. `{type: "toc"}` fails closed. |
 | `insert_toc` | Fails closed. The Docs API cannot insert a native table of contents. |
 | `set_header_footer` | Set default and optional first-page header/footer text on an existing Doc. Optional `page_number` right-aligns that default segment. |
-| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`, `updateTextStyle`, `createHeader`, `createFooter`). `insertTableOfContents` is rejected. `insertText` and `updateParagraphStyle` may use a header or footer `segmentId`. `updateTextStyle` and `insertInlineImage` stay allowlisted. |
-| `get_doc` | Read title, URL, plain text, and a **body** outline. Headers and footers are omitted (`outlineScope` is `body`). A TOC added in the Doc UI is `{type: "toc", entries: [...]}`. |
+| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`, `updateTextStyle`, `insertPageBreak`, `createHeader`, `createFooter`). `insertTableOfContents` is rejected. `insertText` and `updateParagraphStyle` may use a header or footer `segmentId`. `updateTextStyle` and `insertInlineImage` stay on the allowed set. |
+| `get_doc` | Read title, URL, plain text, and a **body** outline. Headers and footers are omitted (`outlineScope` is `body`). A page break in the body is `{type: "page_break"}`. A TOC added in the Doc UI is `{type: "toc", entries: [...]}`. |
 | `insert_image` | Upload PNG, JPEG, or GIF bytes with `drive.file`, then `insertInlineImage` on that `documentId`. Optional `index`, `width_pt`, and `height_pt`. |
 
 `blocks` is a list of objects:
@@ -70,6 +70,7 @@ Ops add `https://www.googleapis.com/auth/drive.file` on that existing OAuth clie
 - `{"type": "bullets", "items": ["...", "..."]}` (alias `bullet_list`)
 - `{"type": "numbered", "items": ["...", "..."]}` (alias `numbered_list`)
 - `{"type": "table", "header": true, "rows": [["H1", "H2"], ["a", "b"]]}`
+- `{"type": "page_break"}` — `insertPageBreak` between the surrounding blocks. Aliases: `pagebreak`, `page-break`, `insert_page_break`. It does not take text.
 - `{"type": "toc"}` — rejected. The Google Docs API cannot insert a native TOC. Alias `table_of_contents` is rejected the same way.
 
 Optional on a heading, paragraph, list item, or table cell:
@@ -264,6 +265,28 @@ Do not pass `{"type": "toc"}`. That call fails closed and does not write the bod
 
 If the headings are missing, the soft-prove failed. If the TOC is missing after Insert → Table of contents, the UI step failed. Do not invent a TOC out of normal paragraphs, and do not use Apps Script.
 
+### 1d. Non-PHI page break
+
+Use a synthetic Doc. No patient data and no PHI. MCP writes content before the break, the break, and content after it. The check is the Doc UI: the second note is on a new page.
+
+1. `create_doc` with title `Docs MCP page break sample (non-PHI)`, passing `blocks`, or `replace_body` on a new Doc:
+
+```json
+[
+  {"type": "heading", "level": 1, "text": "Docs MCP page break sample"},
+  {"type": "paragraph", "text": "Synthetic note on page 1. No patient data."},
+  {"type": "page_break"},
+  {"type": "paragraph", "text": "Synthetic note on page 2. No patient data."}
+]
+```
+
+`page_break` does not take `text`. Aliases `pagebreak`, `page-break`, and `insert_page_break` compile to the same `insertPageBreak` request. No new OAuth scope and no re-consent. No Apps Script.
+
+2. Refresh the Doc. Page 1 shows the heading and `Synthetic note on page 1. No patient data.` Page 2 shows `Synthetic note on page 2. No patient data.` The page break is the gap between those pages.
+3. `get_doc` on the same id returns both notes. The body outline includes `{"type": "page_break"}` between them. `outlineScope` stays `body`. The UI is the check that matters.
+
+If both notes sit on one page, the page-break soft-prove failed. Do not pass `{"type": "toc"}` on this Doc.
+
 ### 2. Non-PHI inline image (local PNG)
 
 Do this only after the `drive.file` re-consent above. The image must be a synthetic diagram with no patient data and no PHI. Do not use an NFRHC diagram or any other PHI-adjacent image here. Those wait on the same BAA confirmation as Doc text in section 3.
@@ -293,7 +316,6 @@ After James or Frans confirms the Workspace BAA covers Docs, repeat the same cre
 Not implemented as blocks or helpers:
 
 - Live AutoText page numbers. `set_header_footer` still cannot insert a `PAGE_NUMBER` field. `page_number: true` right-aligns the default segment. Add the number in the Doc UI (Insert → Page numbers) when `pageNumber.liveField` is false.
-- Page break. `insertPageBreak` remains a raw `batch_update_doc` key. There is no page-break block.
 - Horizontal rule.
 - Heading bookmarks and internal links.
 
