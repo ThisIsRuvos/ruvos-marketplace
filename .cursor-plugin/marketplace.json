@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "Ruvos Team Marketplace for Cursor / Grok Bot plugins.",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "pluginRoot": "plugins"
   },
   "plugins": [
@@ -20,7 +20,7 @@
     {
       "name": "ruvos-google-docs",
       "source": "ruvos-google-docs",
-      "description": "Create and edit Google Docs in place via Docs API batchUpdate (headings, lists, tables, text color and highlight, headers, footers, inline images via drive.file). A native table of contents is Insert → Table of contents in the Doc UI. Ruvos OAuth DCR. Not Word, not HTML, not a markdown upload.",
+      "description": "Create and edit Google Docs in place via Docs API batchUpdate (headings, lists, tables, page breaks, text color and highlight, headers, footers, inline images via drive.file). A native table of contents is Insert → Table of contents in the Doc UI. Ruvos OAuth DCR. Not Word, not HTML, not a markdown upload.",
       "logo": "assets/logo.svg"
     }
   ]

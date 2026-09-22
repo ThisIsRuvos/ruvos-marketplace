@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- `create_doc` and `replace_body` accept `{type: "page_break"}` (aliases `pagebreak`, `page-break`, `insert_page_break`). The compiler emits `insertPageBreak`.
+- `insertPageBreak` was already an allowed `documents.batchUpdate` key. No new OAuth scope. No re-consent. No Apps Script.
+- A page break is two UTF-16 units (the break and the newline the Docs API inserts after it). Content in the blocks before and after it stays on either side.
+- `get_doc` outlines a page break already in the body as `{type: "page_break"}`. Confirm the new page in the Doc UI.
+
 ## 0.4.1
 
 - Fail closed on a native table of contents. The Google Docs API cannot insert one: `insertTableOfContents` is not a `documents.batchUpdate` field and returns HTTP 400.
