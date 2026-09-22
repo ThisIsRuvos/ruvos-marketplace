@@ -56,16 +56,16 @@ Ops add `https://www.googleapis.com/auth/drive.file` on that existing OAuth clie
 | Tool | What it does |
 |------|----------------|
 | `create_doc` | Create a Google Doc. Optional `blocks` write the first body in the same call. Returns `documentId` and `https://docs.google.com/document/d/<id>/edit`. |
-| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Optional text color and highlight. `{type: "page_break"}` inserts a page break. `{type: "toc"}` and `{type: "horizontal_rule"}` fail closed. |
+| `replace_body` | Replace (`mode=replace`, default) or append (`mode=append`) the body in place. Optional text color and highlight. `{type: "page_break"}` inserts a page break. Heading `anchor` plus `links` writes an in-Doc jump. `{type: "toc"}`, `{type: "horizontal_rule"}`, and `{type: "bookmark"}` fail closed. |
 | `insert_toc` | Fails closed. The Docs API cannot insert a native table of contents. |
 | `set_header_footer` | Set default and optional first-page header/footer text on an existing Doc. Optional `page_number` right-aligns that default segment. |
-| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`, `updateTextStyle`, `insertPageBreak`, `createHeader`, `createFooter`). `insertTableOfContents` and `insertHorizontalRule` are rejected. `insertText` and `updateParagraphStyle` may use a header or footer `segmentId`. `updateTextStyle` and `insertInlineImage` stay on the allowed set. |
-| `get_doc` | Read title, URL, plain text, and a **body** outline. Headers and footers are omitted (`outlineScope` is `body`). A page break in the body is `{type: "page_break"}`. A TOC added in the Doc UI is `{type: "toc", entries: [...]}`. A horizontal line added in the Doc UI is `{type: "horizontal_rule"}`. |
+| `batch_update_doc` | Raw `documents.batchUpdate` requests for a follow-up edit on the **same** `documentId` (for example `replaceAllText`, `updateTextStyle`, `insertPageBreak`, `createHeader`, `createFooter`). `insertTableOfContents`, `insertHorizontalRule`, `createBookmark`, and `createNamedRange` are rejected. `insertText` and `updateParagraphStyle` may use a header or footer `segmentId`. `updateTextStyle` and `insertInlineImage` stay on the allowed set. |
+| `get_doc` | Read title, URL, plain text, and a **body** outline. Headers and footers are omitted (`outlineScope` is `body`). A page break in the body is `{type: "page_break"}`. A heading can include `headingId`. Text that already links to a heading includes `headingLinks`. A TOC added in the Doc UI is `{type: "toc", entries: [...]}`. A horizontal line added in the Doc UI is `{type: "horizontal_rule"}`. |
 | `insert_image` | Upload PNG, JPEG, or GIF bytes with `drive.file`, then `insertInlineImage` on that `documentId`. Optional `index`, `width_pt`, and `height_pt`. |
 
 `blocks` is a list of objects:
 
-- `{"type": "heading", "level": 1, "text": "..."}` — level `1`, `2`, or `3` only
+- `{"type": "heading", "level": 1, "text": "...", "anchor": "overview"}` — level `1`, `2`, or `3` only. `anchor` is optional. It names that heading inside this `blocks` list. It is not a Docs bookmark and not a `headingId`.
 - `{"type": "paragraph", "text": "..."}`
 - `{"type": "bullets", "items": ["...", "..."]}` (alias `bullet_list`)
 - `{"type": "numbered", "items": ["...", "..."]}` (alias `numbered_list`)
@@ -73,6 +73,11 @@ Ops add `https://www.googleapis.com/auth/drive.file` on that existing OAuth clie
 - `{"type": "page_break"}` — `insertPageBreak` between the surrounding blocks. Aliases: `pagebreak`, `page-break`, `insert_page_break`. It does not take text.
 - `{"type": "toc"}` — rejected. The Google Docs API cannot insert a native TOC. Alias `table_of_contents` is rejected the same way.
 - `{"type": "horizontal_rule"}` — rejected. The Google Docs API cannot insert a horizontal rule. Aliases `hr`, `horizontal-rule`, and `insert_horizontal_rule` are rejected the same way.
+- `{"type": "bookmark"}` — rejected. The Google Docs API cannot insert a bookmark. Aliases `insert_bookmark`, `heading_bookmark`, and `named_range` are rejected the same way.
+
+Optional on a heading, paragraph, or list item:
+
+- `links` — `[{"text": "Scope", "heading": "scope"}]`. `heading` is an `anchor` on a heading in this same `blocks` list. `headingId` is the alternative when `get_doc` already returned that id: `[{"text": "Scope", "headingId": "h.scope2"}]`. Pass one of them, not both. The first match of `text` is linked. Table cells do not take `links`.
 
 Optional on a heading, paragraph, list item, or table cell:
 
@@ -119,6 +124,30 @@ Write the paragraphs with `create_doc` or `replace_body`. Then in the Doc, use *
 If a horizontal line is already in the body because someone used the Doc UI, `get_doc` can return `{type: "horizontal_rule"}` from that element. That read does not create the rule. Confirm the line in the Doc UI.
 
 An API-inserted rule cannot be soft-proved. The visible line comes from the Doc UI step, between the paragraphs MCP wrote. `page_break` still compiles to `insertPageBreak`. `{type: "toc"}` still fails closed.
+
+### Heading links and bookmarks
+
+The Google Docs API cannot insert a bookmark. The published `documents.batchUpdate` Request schema (discovery `docs.googleapis.com/$discovery/rest?version=v1`) has no `createBookmark` or `insertBookmark` field. `ParagraphStyle.headingId` is read-only. `createNamedRange` creates a named range, which is not a bookmark and is not a jump target. Sending those names is rejected. `{type: "bookmark"}` fails closed and does not call the Docs API.
+
+Use **Insert → Bookmark** in the Doc UI when you need a bookmark. No new OAuth scope. No re-consent. No Apps Script. No named range standing in for a bookmark.
+
+An in-Doc jump to a heading is supported. Docs assigns `headingId` when the paragraph style is `HEADING_1`, `HEADING_2`, or `HEADING_3`. This server reads that id and writes `updateTextStyle` with `textStyle.link.heading.id` and `fields` of `link`.
+
+```json
+[
+  {"type": "heading", "level": 1, "text": "Overview", "anchor": "overview"},
+  {"type": "heading", "level": 2, "text": "Scope", "anchor": "scope"},
+  {
+    "type": "paragraph",
+    "text": "Jump to Scope.",
+    "links": [{"text": "Scope", "heading": "scope"}]
+  }
+]
+```
+
+`anchor` is only a name in this `blocks` list so the link can find the heading. The click target is the heading id Docs assigned. `get_doc` returns that `headingId` on the heading. After the link is written, the paragraph includes `headingLinks: [{text, headingId}]`. Confirm the jump in the Doc UI.
+
+A link to a heading that is already in the Doc can pass `headingId` from `get_doc` instead of `anchor`. A raw `batch_update_doc` `updateTextStyle` can do the same when you already know the UTF-16 range. Multi-tab `tabId` on the link is out of scope. External URL links are out of scope.
 
 ### `insert_image`
 
@@ -300,6 +329,34 @@ Use a synthetic Doc. No patient data and no PHI. MCP writes content before the b
 
 If both notes sit on one page, the page-break soft-prove failed. Do not pass `{"type": "toc"}` on this Doc.
 
+### 1e. Non-PHI heading link
+
+Use a synthetic Doc. No patient data and no PHI. MCP writes an H1, an H2, and a phrase that jumps to the H2. The check is the Doc UI: clicking the phrase moves the cursor to that H2.
+
+1. `create_doc` with title `Docs MCP heading link sample (non-PHI)`, passing `blocks`, or `replace_body` on a new Doc:
+
+```json
+[
+  {"type": "heading", "level": 1, "text": "Docs MCP heading link sample", "anchor": "overview"},
+  {"type": "heading", "level": 2, "text": "Scope", "anchor": "scope"},
+  {
+    "type": "paragraph",
+    "text": "Synthetic note. Jump to Scope. No patient data.",
+    "links": [{"text": "Scope", "heading": "scope"}]
+  }
+]
+```
+
+`anchor` is a name in this `blocks` list. It is not a bookmark. No new OAuth scope and no re-consent. No Apps Script. `createNamedRange` is not used.
+
+2. Refresh the Doc. The H1 and H2 are there. In the paragraph, `Scope` is underlined as a link.
+3. Click that link. The Doc jumps to the H2 `Scope`.
+4. `get_doc` on the same id returns `headingId` on each heading. The paragraph includes `headingLinks` whose `headingId` matches the H2. `outlineScope` stays `body`. The click is the check that matters.
+
+`{"type": "bookmark"}` on that Doc fails closed. A bookmark is **Insert → Bookmark** in the Doc UI. Do not pass `{"type": "toc"}` or `{"type": "horizontal_rule"}` on this Doc. `page_break` still compiles to `insertPageBreak`.
+
+If `Scope` is not a link, or the click does not land on the H2, the heading-link soft-prove failed.
+
 ### 2. Non-PHI inline image (local PNG)
 
 Do this only after the `drive.file` re-consent above. The image must be a synthetic diagram with no patient data and no PHI. Do not use an NFRHC diagram or any other PHI-adjacent image here. Those wait on the same BAA confirmation as Doc text in section 3.
@@ -329,7 +386,7 @@ After James or Frans confirms the Workspace BAA covers Docs, repeat the same cre
 Not implemented as blocks or helpers:
 
 - Live AutoText page numbers. `set_header_footer` still cannot insert a `PAGE_NUMBER` field. `page_number: true` right-aligns the default segment. Add the number in the Doc UI (Insert → Page numbers) when `pageNumber.liveField` is false.
-- Heading bookmarks and internal links. A horizontal rule is fail-closed above, not a later helper.
+- Creating a bookmark. That stays fail-closed above. The heading jump is the supported path.
 
 File those separately if they should become helpers.
 
