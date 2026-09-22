@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- In-Doc heading links. A heading takes `anchor` (a name in that `blocks` list). A heading, paragraph, or list item takes `links: [{text, heading}]`. After the write, `documents.get` reads the read-only `paragraphStyle.headingId` and a follow-up `updateTextStyle` sets `link.heading`. `links[].headingId` is that same id when `get_doc` already returned it.
+- `updateTextStyle` was already an allowed batch key. No new OAuth scope. No re-consent. No Apps Script. No named range.
+- Fail closed on bookmarks. The Google Docs API cannot insert one: discovery has no `createBookmark` or `insertBookmark` field. `createNamedRange` is not a bookmark and is not a jump target. `{type: "bookmark"}` raises that error and does not call the Docs API.
+- Soft-prove is an H1 and H2 with `anchor`, plus a phrase whose `links[].heading` jumps to the H2 in the Doc UI. A bookmark is still **Insert → Bookmark** in the Doc UI.
+- `get_doc` returns `headingId` on a heading and `headingLinks` when a text run already links to one. Page breaks, the fail-closed TOC, and the fail-closed horizontal rule are unchanged.
+
 ## 0.5.1
 
 - Fail closed on a horizontal rule. The Google Docs API cannot insert one: `insertHorizontalRule` is not a `documents.batchUpdate` field (the published Request schema has `insertPageBreak` and no `insertHorizontalRule`; `HorizontalRule` is only a paragraph element on `documents.get`). An unknown name is HTTP 400, the same class of failure as `insertTableOfContents`.
